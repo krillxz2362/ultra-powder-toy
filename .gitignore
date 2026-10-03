@@ -14,6 +14,10 @@ cpp/fall_ref
 cpp/level_ref
 cpp/ui_ref
 cpp/snap
+cpp/press_ref
+cpp/upta
+cpp/*_ref
+cpp/*_bench
 apk/SDL2/
 apk/obj/
 apk/libs/
