@@ -247,6 +247,7 @@ World::World(int w, int h) : w_(w), h_(h) {
     nchunks = cw * ch;
     awake.assign(nchunks, AWAKE);
     therm.assign(nchunks, 0);
+    thermTmp_.assign(nchunks, 0);
 
     air.init(w, h);
     acw = air.cw;

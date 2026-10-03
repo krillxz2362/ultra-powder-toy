@@ -13,7 +13,7 @@ SRC       = src/world.cpp src/contact.cpp src/motion.cpp src/state.cpp src/chem.
 # один раз дала ложный замер.
 HDR       = include/upt_core.h include/upt_substances.h include/upt_chem.h
 BINS      = heat_ref heat_bench move_ref move_bench water_ref water_bench \
-            full_ref full_bench still_ref fall_ref ui_ref save_ref level_ref press_ref
+            full_ref full_bench still_ref fall_ref ui_ref save_ref level_ref press_ref melt_ref
 
 all: $(BINS)
 
@@ -39,6 +39,9 @@ full_ref: tests/full_ref.cpp $(SRC) $(HDR)
 	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
 
 full_bench: tests/full_bench.cpp $(SRC) $(HDR)
+	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
+
+melt_ref: tests/melt_ref.cpp $(SRC) $(HDR)
 	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
 
 press_ref: tests/press_ref.cpp $(SRC) $(HDR)
@@ -74,6 +77,7 @@ check: heat_ref move_ref water_ref full_ref still_ref ui_ref save_ref
 	./ui_ref
 	./save_ref
 	./press_ref
+	./melt_ref
 
 bench: heat_bench move_bench water_bench
 	cd .. && python3 run.py /tmp/heat_bench.lua || true

@@ -454,6 +454,104 @@ do
     end
 end
 
+-- ====================================================================
+-- Фазы для элементов таблицы Менделеева.
+--
+-- Было так: из 111 твёрдых элементов жидкую форму имели только 26,
+-- остальные 85 температуру попросту игнорировали — плавиться им было
+-- некуда. Железо нагревалось до трёх тысяч градусов и оставалось
+-- твёрдым бруском.
+--
+-- Скрытая теплота считается по настоящим правилам, а не берётся с
+-- потолка. Правило Ричардса: теплота плавления около 9 Дж на моль на
+-- кельвин, умноженное на температуру плавления. Правило Трутона: то
+-- же для кипения, около 88. Делим на молярную массу и получаем
+-- килоджоули на килограмм — те же единицы, в которых заданы вода и
+-- камень. Без скрытой теплоты вещество скачет через точку перехода
+-- каждый кадр, и плавление выглядит мерцанием.
+-- ====================================================================
+do
+    local chem = require("data.chem")
+    local have, maxId = {}, 0
+    for _, e in ipairs(E.list) do
+        have[e.key] = e
+        if e.id > maxId then maxId = e.id end
+    end
+    local id = maxId
+
+    local function richards(tmK, mass)        -- теплота плавления, кДж/кг
+        if not tmK or not mass or mass <= 0 then return 200 end
+        local v = 9.0 * tmK / mass
+        return math.max(20, math.min(1200, math.floor(v + 0.5)))
+    end
+    local function trouton(tbK, mass)         -- теплота кипения, кДж/кг
+        if not tbK or not mass or mass <= 0 then return 2000 end
+        local v = 88.0 * tbK / mass
+        return math.max(100, math.min(12000, math.floor(v + 0.5)))
+    end
+
+    local added = 0
+    for _, c in ipairs(chem.el) do
+        local KEY = string.upper(c.sym)
+        local solid = have[KEY]
+        if solid and c.melt then
+            local liq = have[KEY .. "_L"]
+            local gas = have[KEY .. "_G"]
+            local latF = richards(c.melt + 273.15, c.mass)
+            local latV = c.boil and trouton(c.boil + 273.15, c.mass) or nil
+
+            if not liq then
+                id = id + 1
+                -- Расплав появляется горячим: между плавлением и
+                -- кипением, иначе застыл бы в тот же миг.
+                local t0 = c.boil and ((c.melt + c.boil) * 0.5) or (c.melt + 50)
+                liq = {
+                    id = id, key = KEY .. "_L", name = c.ru .. " (ж)",
+                    sym = c.sym, z = c.z, state = E.LIQUID,
+                    -- при плавлении вещество теряет около семи сотых
+                    -- объёма плотности: расплав легче своего твёрдого
+                    density = math.max(1, math.floor(solid.density * 0.93)),
+                    temp = math.floor(t0), cond = solid.cond, cap = solid.cap,
+                    color = { solid.color[1], solid.color[2], solid.color[3] },
+                    shade = 10, tension = 0.45, visc = 0.10,
+                }
+                E.list[#E.list + 1] = liq
+                have[liq.key] = liq
+                added = added + 1
+            end
+
+            if c.boil and not gas then
+                id = id + 1
+                gas = {
+                    id = id, key = KEY .. "_G", name = c.ru .. " (г)",
+                    sym = c.sym, z = c.z, state = E.GAS,
+                    density = math.max(2, math.floor(0.45 * (c.mass or 20))),
+                    temp = math.floor(c.boil + 40), cond = solid.cond,
+                    cap = solid.cap, shade = 10, expand = 0.0000060,
+                    color = { solid.color[1], solid.color[2], solid.color[3] },
+                }
+                E.list[#E.list + 1] = gas
+                have[gas.key] = gas
+                added = added + 1
+            end
+
+            -- Связываем цепочку в обе стороны. Переход без обратного
+            -- хода — это односторонняя дверь: расплав никогда не
+            -- застынет обратно.
+            solid.melt = { at = c.melt, to = liq.id }
+            solid.latF = solid.latF or latF
+            liq.cool   = { at = c.melt, to = solid.id }
+            liq.latF   = liq.latF or latF
+            if gas and c.boil then
+                liq.boil = { at = c.boil, to = gas.id }
+                liq.latV = liq.latV or latV
+                gas.cool = { at = c.boil - 2, to = liq.id }
+                gas.latV = gas.latV or latV
+            end
+        end
+    end
+end
+
 E.byId, E.byKey = {}, {}
 E.count = #E.list
 for _, e in ipairs(E.list) do

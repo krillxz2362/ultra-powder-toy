@@ -214,6 +214,7 @@ function Sim.new(w, h)
     self.nchunks = self.cw * self.ch
     self.awake = ffi.new("uint8_t[?]", self.nchunks)
     self.therm = ffi.new("uint8_t[?]", self.nchunks)
+    self.thermTmp = ffi.new("uint8_t[?]", self.nchunks)  -- копия на время расширения метки
 
     self.air = Air.new(w, h)
     self.acw = self.air.cw
@@ -426,7 +427,15 @@ function Sim:heat()
                         local cp = capArr[t]
                         if cp < 1.0 then cp = 1.0 end
                         local nt = ti + acc * (FLOW / cp)
-                        nt = nt + (ROOM - nt) * BODY_RELAX
+                        -- Остывание в среду — потеря ПОВЕРХНОСТЬЮ, а не
+                        -- всем объёмом. Раньше к комнатной температуре
+                        -- подтягивалась каждая частица, в том числе
+                        -- внутри сплошного тела: получалась дыра по
+                        -- всему объёму, и брусок железа не прогревался
+                        -- до конца никогда.
+                        if open > 0 then
+                            nt = nt + (ROOM - nt) * BODY_RELAX * open * 0.25
+                        end
                         if nt < TMIN then nt = TMIN elseif nt > TMAX then nt = TMAX end
                         T2[i] = nt
                     end
@@ -465,6 +474,29 @@ function Sim:heat()
             end
         end
     end
+    -- Расширяем тепловую метку на один кусок во все стороны.
+    --
+    -- Без этого тепло упирается в невидимую стену: метку получает лишь
+    -- частица, которая сама заметно горячее комнатной, а на переднем
+    -- крае волны она уже остыла — её кусок засыпает, и дальше тепло не
+    -- идёт. Расширение считается по кускам, а не по частицам: кусков
+    -- сотни, а частиц десятки тысяч.
+    local tt = self.thermTmp
+    ffi.copy(tt, therm, self.nchunks)
+    for cy = 0, ch - 1 do
+        for cx = 0, cw - 1 do
+            if tt[cy * cw + cx] ~= 0 then
+                local x0 = cx > 0 and cx - 1 or 0
+                local x1 = cx < cw - 1 and cx + 1 or cw - 1
+                local y0 = cy > 0 and cy - 1 or 0
+                local y1 = cy < ch - 1 and cy + 1 or ch - 1
+                for y = y0, y1 do
+                    for x = x0, x1 do therm[y * cw + x] = AWAKE end
+                end
+            end
+        end
+    end
+
 end
 
 ----------------------------------------------------------------------

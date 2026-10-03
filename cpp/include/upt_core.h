@@ -197,6 +197,7 @@ public:
 
     std::vector<int32_t>  pmap_;    // номер частицы в клетке + 1
     std::vector<uint8_t>  awake, therm;
+    std::vector<uint8_t>  thermTmp_;   // копия на время расширения метки
 
     Air air;
     int maxUsed = 0;
