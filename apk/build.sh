@@ -104,7 +104,9 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := main
 CORE := $(LOCAL_PATH)/../../../cpp
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../SDL2/include $(CORE)/include
-LOCAL_SRC_FILES := $(CORE)/src/core.cpp $(CORE)/src/ui.cpp \
+LOCAL_SRC_FILES := $(CORE)/src/world.cpp $(CORE)/src/contact.cpp \
+                   $(CORE)/src/motion.cpp $(CORE)/src/state.cpp \
+                   $(CORE)/src/chem.cpp $(CORE)/src/ui.cpp \
                    $(CORE)/src/save.cpp $(CORE)/src/main_sdl.cpp
 LOCAL_CPPFLAGS += $(UPT_FLAGS)
 LOCAL_SHARED_LIBRARIES := SDL2
