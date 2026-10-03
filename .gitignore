@@ -1,0 +1,27 @@
+# Собранное и скачанное — в истории ему не место
+cpp/*.o
+cpp/upt
+cpp/heat_ref
+cpp/heat_bench
+cpp/move_ref
+cpp/move_bench
+cpp/water_ref
+cpp/water_bench
+cpp/full_ref
+cpp/full_bench
+cpp/still_ref
+cpp/fall_ref
+cpp/level_ref
+cpp/ui_ref
+cpp/snap
+apk/SDL2/
+apk/obj/
+apk/libs/
+apk/work/
+apk/jni/
+apk/src/
+apk/res/
+apk/assets/
+apk/AndroidManifest.xml
+snapshots/*.ppm
+__pycache__/
