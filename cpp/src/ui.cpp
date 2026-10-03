@@ -131,7 +131,9 @@ void Ui::layout(int screenW, int screenH, const std::vector<int>& favourites) {
     rowH_ = static_cast<int>(screenH * 0.052);
     rowH_ = std::clamp(rowH_, 28, 120);
     ctrlH_ = rowH_ - 2;
-    panelH_ = ctrlH_ + rows * rowH_;
+    // Два ряда управления: во втором — температура кисти. В один ряд
+    // её не втиснуть, кнопки стали бы уже пальца.
+    panelH_ = ctrlH_ * 2 + rows * rowH_;
     y0_ = screenH - panelH_;
 
     buttons.clear();
@@ -143,7 +145,7 @@ void Ui::layout(int screenW, int screenH, const std::vector<int>& favourites) {
         const int c = i % cols_, r = i / cols_;
         Button b;
         b.x = static_cast<int>(c * colW);
-        b.y = y0_ + ctrlH_ + r * rowH_;
+        b.y = y0_ + ctrlH_ * 2 + r * rowH_;
         b.w = static_cast<int>((c + 1) * colW) - b.x;
         b.h = rowH_;
         b.act = Act::Material;
@@ -157,7 +159,7 @@ void Ui::layout(int screenW, int screenH, const std::vector<int>& favourites) {
         const int c = favN % cols_, r = favN / cols_;
         Button b;
         b.x = static_cast<int>(c * colW);
-        b.y = y0_ + ctrlH_ + r * rowH_;
+        b.y = y0_ + ctrlH_ * 2 + r * rowH_;
         b.w = static_cast<int>((c + 1) * colW) - b.x;
         b.h = rowH_;
         b.act = Act::Chem;
@@ -182,6 +184,29 @@ void Ui::layout(int screenW, int screenH, const std::vector<int>& favourites) {
                            Act::BrushUp, Act::View, Act::Arrows,
                            Act::Save, Act::Load, Act::MgrOpen, Act::Clear};
     const double wqAdm[] = {0.95, 0.6, 0.42, 0.7, 0.42, 0.75, 0.8, 0.75, 0.75, 0.95, 1.05};
+
+    // Второй ряд: температура кисти.
+    {
+        const char* tn[] = {"T-", "ТЕМП", "T+", "АВТО"};
+        const Act ta[] = {Act::TempDown, Act::None, Act::TempUp, Act::TempAuto};
+        const double tw[] = {0.6, 1.6, 0.6, 0.8};
+        double tot = 0;
+        for (double q : tw) tot += q;
+        double cx2 = 0;
+        for (int i = 0; i < 4; ++i) {
+            const double ww = screenW * tw[i] / tot;
+            Button b;
+            b.x = static_cast<int>(cx2);
+            b.y = y0_ + ctrlH_;
+            b.w = static_cast<int>(cx2 + ww) - b.x;
+            b.h = ctrlH_;
+            b.act = ta[i];
+            b.label = tn[i];
+            b.color = Color{40, 44, 54};
+            buttons.push_back(b);
+            cx2 += ww;
+        }
+    }
 
     const char** names = admin ? namesAdm : namesBase;
     const Act*   acts  = admin ? actsAdm  : actsBase;
@@ -228,6 +253,7 @@ void Ui::draw(Canvas& cv) const {
         if (b.act == Act::Material) on = (b.id == selected);
         else if (b.act == Act::Pause) on = paused;
         else if (b.act == Act::Arrows) on = arrows;
+        else if (b.act == Act::TempAuto) on = tempAuto;
 
         Color face = b.color;
         if (b.act == Act::Material) {
@@ -257,7 +283,19 @@ void Ui::draw(Canvas& cv) const {
                 cv.frame(b.x, b.y, b.w, b.h, Color{235, 235, 240});
             }
         }
-        if (b.act == Act::None) text = "КИСТЬ " + std::to_string(brush);
+        if (b.act == Act::None) {
+            if (b.label == "ТЕМП") {
+                if (tempAuto) {
+                    text = "ТЕМП АВТО";
+                } else {
+                    char tb[48];
+                    std::snprintf(tb, sizeof tb, "ТЕМП %d", static_cast<int>(brushTemp));
+                    text = tb;
+                }
+            } else {
+                text = "КИСТЬ " + std::to_string(brush);
+            }
+        }
         if (b.act == Act::View) {
             static const char* vn[] = {"ВИД", "ТЕПЛО", "ДАВЛ", "КИСЛ"};
             text = vn[view & 3];

@@ -44,7 +44,8 @@ void drawFlow(Canvas& cv, const Air& air, const WorldView& wv);
 enum class Act {
     None, Material, Pause, Step, BrushDown, BrushUp, View, Arrows, Chem, Clear,
     ChemPick, ChemClose, Save, Load,
-    MgrOpen, MgrClose, MgrLoad, MgrDelete
+    MgrOpen, MgrClose, MgrLoad, MgrDelete,
+    TempDown, TempUp, TempAuto
 };
 
 struct Button {
@@ -95,6 +96,11 @@ public:
     bool paused = false;
     bool arrows = false;
     int  brush = 4;
+    // Температура кисти. «Авто» — вещество появляется со своей
+    // обычной температурой; иначе берётся заданная. Так можно зажечь
+    // холодный огонь или налить раскалённую воду.
+    bool   tempAuto = true;
+    double brushTemp = 400.0;
     int  view = 0;           // 0 вещество, 1 тепло, 2 давление, 3 кислород
     std::string status;      // строка поверх мира
 

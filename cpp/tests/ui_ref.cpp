@@ -17,7 +17,7 @@ int main() {
 
     Ui ui; ui.layout(900, 688, favs);
     ok(ui.panelH() > 0 && ui.y0() > 0, "панель заняла низ экрана");
-    ok(ui.buttons.size() == favs.size() + 1 + 10,
+    ok(ui.buttons.size() == favs.size() + 1 + 4 + 10,
        "кнопок: вещества, ХИМИЯ и ряд управления",
        (std::to_string(ui.buttons.size()) + " шт.").c_str());
 
@@ -75,7 +75,7 @@ int main() {
         bool hasChem = false;
         for (const Button& b : base.buttons) if (b.act == Act::Chem) hasChem = true;
         ok(!hasChem, "в издании Base ячейки ХИМИЯ нет");
-        ok(base.buttons.size() == favs.size() + 10,
+        ok(base.buttons.size() == favs.size() + 4 + 10,
            "в Base кнопок на одну меньше",
            (std::to_string(base.buttons.size()) + " шт.").c_str());
 
@@ -112,6 +112,31 @@ int main() {
         for (const Button& b : adm.mgrButtons)
             if (b.y + b.h > 688) fits = false;
         ok(fits, "лишние сохранения просто не рисуются");
+    }
+
+    // Настраиваемая температура кисти.
+    {
+        Ui t2; t2.layout(900, 688, favs);
+        int down = 0, up = 0, autoB = 0, label = 0;
+        for (const Button& b : t2.buttons) {
+            if (b.act == Act::TempDown) ++down;
+            else if (b.act == Act::TempUp) ++up;
+            else if (b.act == Act::TempAuto) ++autoB;
+            else if (b.act == Act::None && b.label == "ТЕМП") ++label;
+        }
+        ok(down == 1 && up == 1 && autoB == 1 && label == 1,
+           "в панели есть ряд настройки температуры");
+        ok(t2.tempAuto, "по умолчанию температура вещества своя");
+        // Ряд температуры не должен наезжать на вещества и управление.
+        bool over = false;
+        for (size_t i = 0; i < t2.buttons.size(); ++i)
+            for (size_t j = i + 1; j < t2.buttons.size(); ++j) {
+                const Button& a = t2.buttons[i];
+                const Button& b = t2.buttons[j];
+                if (a.x < b.x + b.w && b.x < a.x + a.w &&
+                    a.y < b.y + b.h && b.y < a.y + a.h) over = true;
+            }
+        ok(!over, "ряд температуры никуда не влез");
     }
 
     // Экран ХИМИЯ.

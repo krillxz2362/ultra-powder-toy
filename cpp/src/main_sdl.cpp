@@ -3,6 +3,7 @@
 #include <SDL.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -171,7 +172,10 @@ int main(int argc, char** argv) {
                     world->killAt(x, y);
                     world->wakeCell(x, y);
                 } else if (world->at(x, y) < 0) {
-                    world->create(x, y, mat, world->rng.next(256) - 1);
+                    const int k = world->create(x, y, mat, world->rng.next(256) - 1);
+                    // Заданная температура кисти: так зажигают холодный
+                    // огонь или наливают раскалённую воду.
+                    if (k >= 0 && !ui.tempAuto) world->tmp[k] = ui.brushTemp;
                 }
             }
     };
@@ -319,6 +323,19 @@ int main(int argc, char** argv) {
                             case Act::Step:     stepOnce = 1; ui.paused = true; break;
                             case Act::BrushDown: ui.brush = std::max(1, ui.brush - 1); break;
                             case Act::BrushUp:   ui.brush = std::min(40, ui.brush + 1); break;
+                            case Act::TempAuto:  ui.tempAuto = !ui.tempAuto; break;
+                            case Act::TempDown:
+                            case Act::TempUp: {
+                                // Шаг крупнее на больших значениях: от
+                                // нуля до трёх тысяч по десятке — это
+                                // триста нажатий.
+                                ui.tempAuto = false;
+                                const double a = std::fabs(ui.brushTemp);
+                                const double st = (a < 100) ? 10 : (a < 1000 ? 50 : 100);
+                                ui.brushTemp += (b->act == Act::TempUp) ? st : -st;
+                                ui.brushTemp = std::clamp(ui.brushTemp, -273.0, 3500.0);
+                                break;
+                            }
                             case Act::View:     ui.view = (ui.view + 1) & 3; break;
                             case Act::Arrows:   ui.arrows = !ui.arrows; break;
                             case Act::Clear:    world->clearWorld(); break;
