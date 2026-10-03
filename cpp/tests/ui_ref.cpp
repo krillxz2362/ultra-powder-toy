@@ -17,7 +17,7 @@ int main() {
 
     Ui ui; ui.layout(900, 688, favs);
     ok(ui.panelH() > 0 && ui.y0() > 0, "панель заняла низ экрана");
-    ok(ui.buttons.size() == favs.size() + 1 + 4 + 10,
+    ok(ui.buttons.size() == favs.size() + 1 + 5 + 10,
        "кнопок: вещества, ХИМИЯ и ряд управления",
        (std::to_string(ui.buttons.size()) + " шт.").c_str());
 
@@ -75,7 +75,7 @@ int main() {
         bool hasChem = false;
         for (const Button& b : base.buttons) if (b.act == Act::Chem) hasChem = true;
         ok(!hasChem, "в издании Base ячейки ХИМИЯ нет");
-        ok(base.buttons.size() == favs.size() + 4 + 10,
+        ok(base.buttons.size() == favs.size() + 5 + 10,
            "в Base кнопок на одну меньше",
            (std::to_string(base.buttons.size()) + " шт.").c_str());
 

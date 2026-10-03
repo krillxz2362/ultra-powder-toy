@@ -135,6 +135,11 @@ void World::forces() {
         const Substance& S = SUBSTANCES[t];
         const int st = S.state;
         if (st == SOLID) continue;
+        // В моделях ВОДЫ 2.0 жидкость двигает только новый решатель.
+        // Если оставить и старый перенос, два решателя начинают
+        // спорить: старый затыкает пробоину целой частицей, новый
+        // пытается через неё течь, а объём при этом растёт из ниоткуда.
+        if (st == LIQUID && liquidModel != LIQ_CELLS) continue;
 
         const double x = px[i], y = py[i];
         const int ox = static_cast<int>(std::floor(x));
@@ -303,6 +308,11 @@ void World::advect() {
         const Substance& S = SUBSTANCES[t];
         const int st = S.state;
         if (st == SOLID) continue;
+        // В моделях ВОДЫ 2.0 жидкость двигает только новый решатель.
+        // Если оставить и старый перенос, два решателя начинают
+        // спорить: старый затыкает пробоину целой частицей, новый
+        // пытается через неё течь, а объём при этом растёт из ниоткуда.
+        if (st == LIQUID && liquidModel != LIQ_CELLS) continue;
 
         int ox = static_cast<int>(std::floor(px[i]));
         int oy = static_cast<int>(std::floor(py[i]));

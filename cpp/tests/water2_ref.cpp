@@ -1,6 +1,7 @@
 // ВОДА 2.0: три микропесочницы с котлом, одна сцена на всех.
 // Главная проверка — объём воды не гуляет.
 #include "upt_core.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -42,16 +43,27 @@ static void run(const char* name, int model, int steps) {
 
     const double v0 = s.liquidVolume();
     double worst = 0.0;
+    size_t mostDrops = 0;
     for (int i = 0; i < steps; ++i) {
+        // Пробиваем стенку котла на середине: без пробоины капли не
+        // вылетают, и проверка их просто не трогает. Первая же ошибка
+        // в каплях — двойная выдача объёма — так и пряталась.
+        if (i == steps / 2) {
+            const int cx0 = W / 3, cy1 = H - 6;
+            s.killAt(cx0, cy1 - 1);
+            s.killAt(cx0, cy1 - 2);
+            s.wakeChunkArea(cx0 >> CSHIFT, (cy1 - 2) >> CSHIFT);
+        }
         s.step();
+        mostDrops = std::max(mostDrops, s.drops.size());
         const double v = s.liquidVolume();
         worst = std::max(worst, std::fabs(v - v0));
     }
     const double v1 = s.liquidVolume();
     char buf[160];
     std::snprintf(buf, sizeof buf,
-        "было %.1f, стало %.1f, худшее расхождение %.3f, капель %zu",
-        v0, v1, worst, s.drops.size());
+        "было %.1f, стало %.1f, худшее расхождение %.3f, капель разом до %zu",
+        v0, v1, worst, mostDrops);
     ok(worst < v0 * 0.02, (std::string("объём воды не гуляет: ") + name).c_str(), buf);
 }
 

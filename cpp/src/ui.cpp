@@ -187,13 +187,14 @@ void Ui::layout(int screenW, int screenH, const std::vector<int>& favourites) {
 
     // Второй ряд: температура кисти.
     {
-        const char* tn[] = {"T-", "ТЕМП", "T+", "АВТО"};
-        const Act ta[] = {Act::TempDown, Act::None, Act::TempUp, Act::TempAuto};
-        const double tw[] = {0.6, 1.6, 0.6, 0.8};
+        const char* tn[] = {"T-", "ТЕМП", "T+", "АВТО", "ВОДА"};
+        const Act ta[] = {Act::TempDown, Act::None, Act::TempUp, Act::TempAuto,
+                          Act::WaterModel};
+        const double tw[] = {0.5, 1.3, 0.5, 0.65, 1.4};
         double tot = 0;
         for (double q : tw) tot += q;
         double cx2 = 0;
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 5; ++i) {
             const double ww = screenW * tw[i] / tot;
             Button b;
             b.x = static_cast<int>(cx2);
@@ -254,6 +255,7 @@ void Ui::draw(Canvas& cv) const {
         else if (b.act == Act::Pause) on = paused;
         else if (b.act == Act::Arrows) on = arrows;
         else if (b.act == Act::TempAuto) on = tempAuto;
+        else if (b.act == Act::WaterModel) on = (water != 0);
 
         Color face = b.color;
         if (b.act == Act::Material) {
@@ -282,6 +284,10 @@ void Ui::draw(Canvas& cv) const {
                 cv.fill(b.x + 1, b.y + 1, b.w - 2, b.h - 2, face);
                 cv.frame(b.x, b.y, b.w, b.h, Color{235, 235, 240});
             }
+        }
+        if (b.act == Act::WaterModel) {
+            static const char* wn[] = {"ВОДА КЛЕТКИ", "ВОДА ДОЛЯ", "ВОДА ГИБРИД"};
+            text = wn[water % 3];
         }
         if (b.act == Act::None) {
             if (b.label == "ТЕМП") {

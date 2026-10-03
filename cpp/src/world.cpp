@@ -302,6 +302,10 @@ int World::create(int x, int y, int t, int rnd) {
     if (freeTop_ <= 0) return -1;
 
     const int i = free_[--freeTop_];
+    // Доля заполнения: созданная частица занимает клетку целиком.
+    // Без этого в новой модели всплывали остатки от прошлых жильцов
+    // этой ячейки, и вода появлялась из ниоткуда.
+    if (static_cast<size_t>(i) < fill.size()) fill[i] = 1.0;
     type[i]    = static_cast<uint16_t>(t);
     alive[i]   = 1;
     px[i]      = x + 0.5;
@@ -504,6 +508,32 @@ void World::fillFrame(uint8_t* rgba, int view) const {
         const int x = static_cast<int>(std::floor(px[i]));
         const int y = static_cast<int>(std::floor(py[i]));
         if (x < 0 || y < 0 || x >= w_ || y >= h_) continue;
+        const size_t o = (static_cast<size_t>(y) * w_ + x) * 4;
+        // Полупустая клетка рисуется слабее: иначе край воды в новой
+        // модели выглядит ступенькой, хотя на деле он плавный.
+        double f = 1.0;
+        if (liquidModel != LIQ_CELLS && !fill.empty()
+            && SUBSTANCES[type[i]].state == LIQUID) {
+            f = fill[i];
+            if (f > 1.0) f = 1.0; else if (f < 0.0) f = 0.0;
+        }
+        if (f >= 0.999) {
+            rgba[o]     = pal[k];
+            rgba[o + 1] = pal[k + 1];
+            rgba[o + 2] = pal[k + 2];
+        } else {
+            rgba[o]     = static_cast<uint8_t>(BG_R + (pal[k]     - BG_R) * f);
+            rgba[o + 1] = static_cast<uint8_t>(BG_G + (pal[k + 1] - BG_G) * f);
+            rgba[o + 2] = static_cast<uint8_t>(BG_B + (pal[k + 2] - BG_B) * f);
+        }
+    }
+
+    // Капли: они не частицы и в карте клеток их нет, поэтому рисуем
+    // отдельно. Без этого струя из пробоины невидима.
+    for (const Drop& d : drops) {
+        const int x = static_cast<int>(d.x), y = static_cast<int>(d.y);
+        if (x < 0 || y < 0 || x >= w_ || y >= h_) continue;
+        const size_t k = (static_cast<size_t>(d.type) * SHADES + 16) * 3;
         const size_t o = (static_cast<size_t>(y) * w_ + x) * 4;
         rgba[o]     = pal[k];
         rgba[o + 1] = pal[k + 1];

@@ -45,7 +45,7 @@ enum class Act {
     None, Material, Pause, Step, BrushDown, BrushUp, View, Arrows, Chem, Clear,
     ChemPick, ChemClose, Save, Load,
     MgrOpen, MgrClose, MgrLoad, MgrDelete,
-    TempDown, TempUp, TempAuto
+    TempDown, TempUp, TempAuto, WaterModel
 };
 
 struct Button {
@@ -101,6 +101,9 @@ public:
     // холодный огонь или налить раскалённую воду.
     bool   tempAuto = true;
     double brushTemp = 400.0;
+    // ВОДА 2.0: какая из трёх моделей жидкости сейчас считает.
+    // 0 — клетки (как было), 1 — доля заполнения, 2 — гибрид с каплями.
+    int water = 0;
     int  view = 0;           // 0 вещество, 1 тепло, 2 давление, 3 кислород
     std::string status;      // строка поверх мира
 

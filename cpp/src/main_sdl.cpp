@@ -23,7 +23,7 @@
 #ifdef UPT_VERSION_RAW
 #define UPT_VERSION UPT_STR(UPT_VERSION_RAW)
 #else
-#define UPT_VERSION "1.4.0"
+#define UPT_VERSION "1.B"
 #endif
 
 // Издание и ветка задаются при сборке:
@@ -324,6 +324,24 @@ int main(int argc, char** argv) {
                             case Act::BrushDown: ui.brush = std::max(1, ui.brush - 1); break;
                             case Act::BrushUp:   ui.brush = std::min(40, ui.brush + 1); break;
                             case Act::TempAuto:  ui.tempAuto = !ui.tempAuto; break;
+                            case Act::WaterModel: {
+                                // Три модели воды по кругу. При
+                                // переходе на новые доля заполнения
+                                // ставится в единицу: клетка занята
+                                // целиком, как было до переключения.
+                                ui.water = (ui.water + 1) % 3;
+                                static const int mm[3] = {World::LIQ_CELLS,
+                                                          World::LIQ_FILL,
+                                                          World::LIQ_HYBRID};
+                                world->liquidModel = mm[ui.water];
+                                world->drops.clear();
+                                world->fill.assign(world->maxp(), 1.0);
+                                note = (ui.water == 0) ? "ВОДА: КЛЕТКИ"
+                                     : (ui.water == 1) ? "ВОДА: ДОЛЯ ЗАПОЛНЕНИЯ"
+                                                       : "ВОДА: ГИБРИД С КАПЛЯМИ";
+                                noteUntil = SDL_GetTicks() + 2500;
+                                break;
+                            }
                             case Act::TempDown:
                             case Act::TempUp: {
                                 // Шаг крупнее на больших значениях: от

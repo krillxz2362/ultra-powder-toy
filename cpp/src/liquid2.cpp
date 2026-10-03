@@ -91,7 +91,50 @@ void World::liquidFill() {
                 }
             }
 
-            // 2. Вбок — выравнивание уровня. Отдаём половину разницы:
+            // 2. Выброс капли.
+            //
+            // Клетка способна передать соседу лишь долю своего объёма
+            // за шаг. У пробоины напор гонит воду быстрее: по
+            // Торричелли скорость равна корню из 2gh, и при глубине в
+            // двадцать клеток это две с половиной клетки за шаг.
+            // Столько сетка не пропустит — значит, избыток должен
+            // улететь каплей. Отсюда и берётся струя.
+            if (liquidModel == LIQ_HYBRID && drops.size() < dropLimit
+                && have > 0.2) {
+                const size_t ci = static_cast<size_t>(y) * w + x;
+                const double depth = lp[ci] / std::max(1.0, dens[i]);
+                const double v = std::min(std::sqrt(2.0 * GRAV * std::max(0.0, depth)),
+                                          static_cast<double>(MAXV));
+                if (v > 1.0) {
+                    for (int s2 = 0; s2 < 2; ++s2) {
+                        const int nx = (s2 == 0) ? x - 1 : x + 1;
+                        if (nx < 0 || nx >= w) continue;
+                        // Сосед должен быть свободен или почти свободен.
+                        // Тонкая плёнка в проёме струю не отменяет —
+                        // именно она и есть начало струи.
+                        const int oNb = at(nx, y);
+                        if (oNb >= 0) {
+                            if (SUBSTANCES[type[oNb]].state != LIQUID) continue;
+                            if (type[oNb] != type[i]) continue;
+                            if (fill.empty() || fill[oNb] > 0.6) continue;
+                        }
+                        // Улетает то, что сетка передать не успевает.
+                        const double excess = std::min(have * 0.5, (v - 1.0) * 0.25);
+                        if (excess < 0.05) break;
+                        Drop d;
+                        d.x = nx + 0.5; d.y = y + 0.5;
+                        d.vx = (s2 == 0) ? -v : v;
+                        d.vy = 0.0;
+                        d.vol = excess;
+                        d.type = type[i];
+                        drops.push_back(d);
+                        have -= excess;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Вбок — выравнивание уровня. Отдаём половину разницы:
             // так вода приходит к ровному уровню и не раскачивается.
             for (int s = 0; s < 2 && have > DROPLET; ++s) {
                 const int nx = (s == 0) ? x - 1 : x + 1;
@@ -175,8 +218,8 @@ void World::dropsStep() {
 
         // Путь проходим шажками: иначе капля прошьёт стену насквозь.
         const int n = static_cast<int>(sp / 0.4) + 1;
-        bool landed = false;
-        for (int s = 1; s <= n && !landed; ++s) {
+        bool landed = false, merged = false;
+        for (int s = 1; s <= n && !landed && !merged; ++s) {
             const double nx = d.x + d.vx * s / n;
             const double ny = d.y + d.vy * s / n;
             const int cx = static_cast<int>(nx), cy = static_cast<int>(ny);
@@ -188,14 +231,18 @@ void World::dropsStep() {
             if (o >= 0 && type[o] == d.type) {
                 // Влилась в свою же толщу.
                 if (fill.size() < static_cast<size_t>(maxp_)) fill.resize(maxp_, 1.0);
+                // Объём отдан здесь — и больше нигде. Ровно эта
+                // двойная выдача (на лету и ещё раз при посадке)
+                // рождала воду из ниоткуда.
                 fill[o] += d.vol;
                 wakeCell(cx, cy);
-                landed = true;
+                merged = true;
                 break;
             }
             d.x = nx; d.y = ny;
         }
 
+        if (merged) continue;      // объём уже отдан толще
         if (landed) {
             // Садимся туда, где стоим: объём возвращается в толщу.
             const int cx = std::clamp(static_cast<int>(d.x), 0, w - 1);
