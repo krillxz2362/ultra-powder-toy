@@ -173,6 +173,7 @@ Lua при N = 400 000 — архитектура на массивах подт
 
 | сборка | команда | пакет | что внутри |
 |---|---|---|---|
+| **Полное (max)** | `EDITION=max bash apk/build.sh` | `com.krillxz2362.upt` | **всё разом: химия и менеджер сохранений** |
 | Alcoholic | `EDITION=alco bash apk/build.sh` | `com.krillxz2362.upt` | вся химия, таблица Менделеева, варка |
 | Base | `EDITION=base bash apk/build.sh` | `com.krillxz2362.uptbase` | только базовые вещества, без экрана ХИМИЯ |
 | UptA | `ADMIN=1 bash apk/build.sh` | `com.krillxz2362.upta` | то же плюс менеджер сохранений |

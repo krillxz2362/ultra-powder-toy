@@ -22,7 +22,11 @@ case "$EDITION" in
   base) PKG=com.krillxz2362.uptbase; APPNAME="ULTRA POWDER TOY BASE"
         UPT_FLAGS="$UPT_FLAGS -DUPT_BASE"; SUF="-base" ;;
   alco) PKG=com.krillxz2362.upt;     APPNAME="ULTRA POWDER TOY"; SUF="" ;;
-  *)    echo "неизвестное издание: $EDITION (нужно alco или base)"; exit 1 ;;
+  # Полное издание: вся химия и служебные возможности разом, на
+  # основном пакете. Это главное приложение, а не отдельная ветка.
+  max)  PKG=com.krillxz2362.upt;     APPNAME="ULTRA POWDER TOY"
+        UPT_FLAGS="$UPT_FLAGS -DUPT_ADMIN"; SUF="-max"; ADMIN=0 ;;
+  *)    echo "неизвестное издание: $EDITION (нужно alco, base или max)"; exit 1 ;;
 esac
 if [ "$ADMIN" = "1" ]; then
   PKG=com.krillxz2362.upta
