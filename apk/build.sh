@@ -6,11 +6,32 @@ set -e
 HERE=/home/user/sandbox/apk
 cd $HERE
 
-VER_NAME=${VER_NAME:-1.2.3}
+VER_NAME=${VER_NAME:-1.4.0}
 VER_CODE=${VER_CODE:-1}
-PKG=com.krillxz2362.upt
-APPNAME="ULTRA POWDER TOY"
-OUT=/home/user/UPT-$VER_NAME.apk
+
+# Издание и ветка.
+#   EDITION=alco  — полная химия, варка алкоголя (по умолчанию)
+#   EDITION=base  — только базовые вещества, без таблицы Менделеева
+#   ADMIN=1       — ветка UptA: менеджер сохранений и прочее служебное
+# Ставятся рядом друг с другом: у каждой своё имя пакета.
+EDITION=${EDITION:-alco}
+ADMIN=${ADMIN:-0}
+
+UPT_FLAGS="-DUPT_WITH_SDL -DUPT_VERSION_RAW=$VER_NAME"
+case "$EDITION" in
+  base) PKG=com.krillxz2362.uptbase; APPNAME="ULTRA POWDER TOY BASE"
+        UPT_FLAGS="$UPT_FLAGS -DUPT_BASE"; SUF="-base" ;;
+  alco) PKG=com.krillxz2362.upt;     APPNAME="ULTRA POWDER TOY"; SUF="" ;;
+  *)    echo "неизвестное издание: $EDITION (нужно alco или base)"; exit 1 ;;
+esac
+if [ "$ADMIN" = "1" ]; then
+  PKG=com.krillxz2362.upta
+  APPNAME="ULTRA POWDER TOY UPTA"
+  UPT_FLAGS="$UPT_FLAGS -DUPT_ADMIN"
+  SUF="$SUF-upta"
+fi
+OUT=/home/user/UPT-$VER_NAME$SUF.apk
+echo ">> издание $EDITION, админ $ADMIN, пакет $PKG"
 
 #--- 1. JDK 17 -------------------------------------------------------
 if [ ! -x /home/user/jdk17/bin/java ]; then
@@ -56,7 +77,10 @@ if [ ! -f SDL2/Android.mk ]; then
 fi
 
 #--- 4. Дерево сборки ------------------------------------------------
-rm -rf jni work src res
+# obj и libs тоже чистим: ndk-build не следит за сменой признаков
+# сборки, и издание Base собралось бы из объектных файлов Alcoholic —
+# три разных APK вышли бы одинаковыми внутри.
+rm -rf jni work src res obj libs
 mkdir -p jni/app res/mipmap res/values src/$(echo $PKG | tr . /) work
 
 # ndk-build обходит подпапки jni: кладём туда и SDL2, и нашу часть
@@ -80,7 +104,9 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := main
 CORE := $(LOCAL_PATH)/../../../cpp
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../SDL2/include $(CORE)/include
-LOCAL_SRC_FILES := $(CORE)/src/core.cpp $(CORE)/src/ui.cpp $(CORE)/src/main_sdl.cpp
+LOCAL_SRC_FILES := $(CORE)/src/core.cpp $(CORE)/src/ui.cpp \
+                   $(CORE)/src/save.cpp $(CORE)/src/main_sdl.cpp
+LOCAL_CPPFLAGS += $(UPT_FLAGS)
 LOCAL_SHARED_LIBRARIES := SDL2
 LOCAL_LDLIBS := -lGLESv1_CM -lGLESv2 -lOpenSLES -llog -landroid
 include $(BUILD_SHARED_LIBRARY)
@@ -145,7 +171,7 @@ EOF
 #--- 6. Нативная часть -----------------------------------------------
 echo ">> собираю нативную часть (это долго)"
 $NDK/ndk-build NDK_PROJECT_PATH=$HERE APP_BUILD_SCRIPT=$HERE/jni/Android.mk \
-  NDK_APPLICATION_MK=$HERE/jni/Application.mk -j2 2>&1 | tail -5
+  NDK_APPLICATION_MK=$HERE/jni/Application.mk UPT_FLAGS="$UPT_FLAGS" -j2 2>&1 | tail -5
 
 #--- 7. Упаковка -----------------------------------------------------
 echo ">> упаковываю"
