@@ -523,6 +523,12 @@ void World::step() {
     clampWall();
     air.update();
     move();
+
+    // ВОДА 2.0. Три прототипа стоят рядом и включаются полем
+    // liquidModel: так их можно сравнить на одной сцене, а не спорить.
+    // Разбор — в ЖИДКОСТЬ.md.
+    if (liquidModel == LIQ_FILL || liquidModel == LIQ_HYBRID) liquidFill();
+    if (liquidModel == LIQ_DROPS || liquidModel == LIQ_HYBRID) dropsStep();
 }
 
 }  // namespace upt

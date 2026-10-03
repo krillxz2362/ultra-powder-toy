@@ -105,6 +105,7 @@ public:
     World(int w, int h);
 
     int width()  const { return w_; }
+    int maxp()   const { return maxp_; }
     int height() const { return h_; }
 
     // Создать частицу. Возвращает её номер или -1, если клетка занята
@@ -155,6 +156,31 @@ public:
     // оттенок по полю shd, фон у пустоты.
     // Режимы показа: вещество, тепло, давление, кислород. Те же
     // цветовые шкалы, что в эталоне на LÖVE.
+    // Какой моделью считать жидкость. Три прототипа стоят рядом,
+    // чтобы сравнивать их на одной сцене, а не спорить.
+    //   CELLS  — как сейчас: одна частица на клетку
+    //   FILL   — доля заполнения клетки, перетоки дробные
+    //   DROPS  — свободные капли вне сетки
+    //   HYBRID — толща долями, брызги каплями
+    enum Liquid { LIQ_CELLS = 0, LIQ_FILL = 1, LIQ_DROPS = 2, LIQ_HYBRID = 3 };
+    int liquidModel = LIQ_CELLS;
+
+    // Доля заполнения клетки жидкостью, от 0 до 1 с небольшим запасом
+    // на сжатие. Для модели CELLS не используется.
+    std::vector<double> fill;
+
+    // Свободные капли: место, скорость, объём, вещество.
+    struct Drop { double x, y, vx, vy, vol; int32_t type; };
+    std::vector<Drop> drops;
+    size_t dropLimit = 20000;   // потолок: иначе буря из брызг съест кадр
+
+    // Общий объём жидкости: доли по клеткам плюс капли. Главная
+    // проверка всей затеи — это число не должно гулять.
+    double liquidVolume() const;
+
+    void liquidFill();     // перетоки доли между клетками
+    void dropsStep();      // полёт капель и возврат в толщу
+
     enum View { VIEW_MAT = 0, VIEW_HEAT = 1, VIEW_PRES = 2, VIEW_OXY = 3 };
     void fillFrame(uint8_t* rgba, int view = VIEW_MAT) const;
 

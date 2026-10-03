@@ -8,13 +8,13 @@ CXXFLAGS ?= -std=c++17 -O2 -Wall -Wextra -Iinclude
 #   state   — тепло, фазы, срок жизни
 #   chem    — поиск пар, проверка, правила, исполнение
 SRC       = src/world.cpp src/contact.cpp src/motion.cpp src/state.cpp \
-            src/chem.cpp src/body.cpp
+            src/chem.cpp src/body.cpp src/liquid2.cpp
 # Заголовки — тоже зависимость. Без них make оставляет старый двоичный
 # файл, и сверка показывает числа прошлой сборки. Такая ловушка уже
 # один раз дала ложный замер.
 HDR       = include/upt_core.h include/upt_substances.h include/upt_chem.h
 BINS      = heat_ref heat_bench move_ref move_bench water_ref water_bench \
-            full_ref full_bench still_ref fall_ref ui_ref save_ref level_ref press_ref melt_ref body_ref
+            full_ref full_bench still_ref fall_ref ui_ref save_ref level_ref press_ref melt_ref body_ref water2_ref
 
 all: $(BINS)
 
@@ -40,6 +40,9 @@ full_ref: tests/full_ref.cpp $(SRC) $(HDR)
 	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
 
 full_bench: tests/full_bench.cpp $(SRC) $(HDR)
+	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
+
+water2_ref: tests/water2_ref.cpp $(SRC) $(HDR)
 	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
 
 body_ref: tests/body_ref.cpp $(SRC) $(HDR) include/upt_body.h
@@ -83,6 +86,7 @@ check: heat_ref move_ref water_ref full_ref still_ref ui_ref save_ref
 	./press_ref
 	./melt_ref
 	./body_ref
+	./water2_ref
 
 bench: heat_bench move_bench water_bench
 	cd .. && python3 run.py /tmp/heat_bench.lua || true
