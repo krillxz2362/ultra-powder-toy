@@ -59,11 +59,17 @@ ui_ref: tests/ui_ref.cpp src/ui.cpp $(SRC) $(HDR) include/upt_ui.h include/upt_f
 still_ref: tests/still_ref.cpp $(SRC) $(HDR)
 	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
 
+press_ref: tests/press_ref.cpp $(SRC) $(HDR)
+	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
+
+melt_ref: tests/melt_ref.cpp $(SRC) $(HDR)
+	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
+
 fall_ref: tests/fall_ref.cpp $(SRC) $(HDR)
 	$(CXX) $(CXXFLAGS) $< $(SRC) -o $@
 
 # Сверка с эталоном на Lua: числа должны совпасть до шестого знака.
-check: heat_ref move_ref water_ref full_ref still_ref ui_ref save_ref
+check: heat_ref move_ref water_ref full_ref still_ref ui_ref save_ref press_ref melt_ref
 	cd .. && python3 run.py tools/heat_ref.lua
 	./heat_ref
 	cd .. && python3 run.py tools/move_ref.lua
